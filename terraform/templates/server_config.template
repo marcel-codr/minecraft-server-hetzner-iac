@@ -1,0 +1,20 @@
+# Server Configuration Template
+# This template shows the structure for defining Minecraft servers
+# Copy this structure and customize the values for each server
+
+servers = [
+  {
+    name         = "my-java-server"
+    edition      = "java"  # or "bedrock"
+    docker_image = "itzg/minecraft-server:latest"
+    server_type  = "cx11"  # Hetzner server type (cx11, cx21, etc.)
+    location     = "nbg1"  # Hetzner datacenter (nbg1, fsn1, hel1, etc.)
+  },
+  {
+    name         = "my-bedrock-server"
+    edition      = "bedrock"
+    docker_image = "itzg/minecraft-bedrock-server:latest"
+    server_type  = "cx21"
+    location     = "fsn1"
+  }
+]
