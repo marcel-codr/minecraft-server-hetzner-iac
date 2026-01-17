@@ -8,7 +8,6 @@ Infrastructure as Code (IaC) project for automated setup, deployment, and mainte
 - **Multi-Edition Support**: Java and Bedrock editions with custom Docker images
 - **Flexible Scaling**: Mix server types and locations within the same environment
 - **Environment Isolation**: Each environment deploys to a separate Hetzner project
-- **Automatic Project Creation**: Creates isolated Hetzner projects for each environment
 - **CI/CD Integration**: GitHub Actions for automatic deployments on code changes
 - **Docker-Based**: Uses official Minecraft Docker images from itzg
 
@@ -22,15 +21,18 @@ Infrastructure as Code (IaC) project for automated setup, deployment, and mainte
 ## Quick Start
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/marcel-codr/minecraft-server-hetzner-iac.git
    cd minecraft-server-hetzner-iac
    ```
 
 2. **Create a new environment**:
+
    ```bash
    ./scripts/setup_env.sh
    ```
+
    Follow the prompts to configure your environment (edition, server type, etc.).
 
    📖 **Detailed Setup Guide**: See [docs/environment-setup.md](docs/environment-setup.md) for comprehensive instructions.
@@ -50,14 +52,18 @@ Your Minecraft server will be running on a Hetzner VPS with the specified config
 
 Environments represent separate deployments (e.g., dev, staging, prod) and are isolated in different Hetzner projects.
 
-Run `./scripts/setup_env.sh` and provide:
-- Environment name
-- Interactive server configuration (add servers one by one, specifying edition, docker image, server type, location for each)
-- Project name and account-level API token
+Run `./scripts/setup_env.sh` and follow the guided workflow:
+
+1. **Create a Hetzner Project** (manually in Hetzner Console)
+2. **Configure servers** interactively (edition, docker image, server type, location)
+3. **Add SSH keys** (optional, for server access)
+4. **Enter the project-specific API token**
 
 📖 **Complete Guide**: [Environment Setup Documentation](docs/environment-setup.md)
 
 The script will:
+
+- Guide you through creating a dedicated Hetzner project
 - Create the environment directory
 - Generate Terraform configuration
 - Add the API token as a GitHub secret for CI/CD
@@ -83,6 +89,7 @@ terraform destroy
 ### Server Configuration
 
 Servers are deployed with:
+
 - Ubuntu 22.04
 - Docker installed via cloud-init
 - Minecraft server running in a container
@@ -93,6 +100,7 @@ Customize by editing `terraform/environments/<env>/main.tf` or the module templa
 ### Adding SSH Access
 
 To enable SSH access to servers:
+
 1. Add SSH keys to your Hetzner project
 2. Specify key names when creating the environment
 3. SSH to the server: `ssh root@<server-ip>`
@@ -123,6 +131,7 @@ docs/                       # Detailed documentation
 ## CI/CD
 
 The repository includes a GitHub Actions workflow (`deployment.yml`) that:
+
 - Triggers on changes to `terraform/` directory
 - Deploys to all configured environments
 - Uses per-environment API tokens from repository secrets
@@ -175,6 +184,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For questions or support:
+
 - Check the [GitHub Issues](https://github.com/marcel-codr/minecraft-server-hetzner-iac/issues)
 - Review the Terraform documentation
 - Consult Hetzner Cloud documentation

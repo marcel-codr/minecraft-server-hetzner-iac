@@ -5,6 +5,7 @@ This guide provides detailed instructions for setting up new environments in the
 ## Overview
 
 Environments in this project represent isolated deployments of Minecraft servers. Each environment:
+
 - Deploys to a separate Hetzner Cloud project
 - Has its own Terraform state
 - Can have different configurations (edition, server type, etc.)
@@ -14,23 +15,14 @@ Environments in this project represent isolated deployments of Minecraft servers
 
 Before setting up an environment, ensure you have:
 
-1. **Hetzner Cloud Account**: With permission to create projects
-2. **Account-Level API Token**: Generate a token with project creation permissions
-3. **GitHub CLI**: Install and authenticate (`gh auth login`)
-4. **Repository Access**: Push access to manage secrets
+1. **Hetzner Cloud Account**: Access to create projects and servers
+2. **GitHub CLI**: Install and authenticate (`gh auth login`)
+3. **Repository Access**: Push access to manage secrets
+4. **Terraform**: Version 1.5.0 or higher
 
 ## Step-by-Step Setup
 
-### 1. Prepare Account-Level API Token
-
-1. Log in to [Hetzner Cloud Console](https://console.hetzner.cloud)
-2. Go to **Security** → **API Tokens**
-3. Create a new token with **account-level permissions** (can create projects)
-4. **Copy the token immediately** - it won't be shown again
-
-This token will be used to create the project automatically.
-
-### 2. Run the Setup Script
+### 1. Run the Setup Script
 
 Execute the interactive setup script:
 
@@ -38,19 +30,31 @@ Execute the interactive setup script:
 ./scripts/setup_env.sh
 ```
 
-### 3. Configure Environment Details
+### 2. Follow the Guided Workflow
 
-The script will prompt for the following information:
+The script guides you through these steps:
+
+#### STEP 1: Create a Hetzner Cloud Project
+
+The script will display instructions to:
+
+1. Go to [Hetzner Cloud Console](https://console.hetzner.cloud/projects)
+2. Click **+ New Project**
+3. Name it something like `minecraft-<env-name>` (e.g., `minecraft-dev`, `minecraft-prod`)
+4. Go to the project → **Security** → **API Tokens**
+5. Generate a new API token with **Read & Write** permissions
+6. Copy the token
+
+Press Enter when ready to continue.
 
 #### Environment Name
+
 - Choose a descriptive name (e.g., `dev`, `staging`, `prod`)
 - This becomes the directory name under `terraform/environments/`
-- Example: `dev`
 
 #### Server Configurations
-The script will interactively ask you to configure each server one by one:
 
-For each server, provide:
+The script will interactively ask you to configure each server:
 
 - **Server Name**: Unique identifier (e.g., `java-main`, `bedrock-test`)
 - **Edition**: `java` or `bedrock`
@@ -58,39 +62,45 @@ For each server, provide:
 - **Server Type**: Hetzner instance type from the menu
 - **Location**: Datacenter location
 
-After configuring each server, you'll be asked if you want to add another server. Answer `y` to add more servers or `n` to finish.
+After configuring each server, you'll be asked if you want to add another server.
 
 Available server types:
-1. **cx11** (1 vCPU, 2GB RAM) - Basic
-2. **cpx11** (2 vCPU, 2GB RAM) - Balanced
-3. **cx21** (2 vCPU, 4GB RAM) - Standard
-4. **cpx21** (3 vCPU, 4GB RAM) - Performance
-5. **Custom**: Enter any Hetzner server type
+| Type | vCPU | RAM | Architecture | Monthly Cost |
+|------|------|-----|--------------|-------------|
+| **cx23** | 2 | 4 GB | x86 | ~€3.56 |
+| **cx33** | 4 | 8 GB | x86 | ~€7.11 |
+| **cx43** | 8 | 16 GB | x86 | ~€14.22 |
+| **cax11** | 2 | 4 GB | ARM | ~€3.92 |
+| **Custom** | - | - | - | - |
 
 Locations:
-- **nbg1**: Nuremberg, Germany
+
+- **nbg1**: Nuremberg, Germany (default)
 - **fsn1**: Falkenstein, Germany
 - **hel1**: Helsinki, Finland
 
-#### Project Name
-- Name for the new Hetzner project that will be created
-- Example: "Minecraft Dev Server", "Production Minecraft"
-- Default: `<environment-name>-minecraft`
+#### STEP 2: SSH Keys (Optional)
 
-#### Account-Level API Token
-- The account-level token you created earlier
-- Must have permissions to create projects
-- This token is stored as a GitHub secret for CI/CD
+- Enter the names of SSH keys you've uploaded to your Hetzner project
+- These must match the key names in Hetzner Cloud Console → Security → SSH Keys
+- Leave empty to skip (you won't be able to SSH into the server)
+
+#### STEP 3: Hetzner Cloud API Token
+
+- Enter the API token you created for this environment's Hetzner project
+- This token is specific to the project you created in Step 1
+- The token is stored as a GitHub secret for CI/CD
 
 ## What Happens During Setup
 
 The setup script performs the following actions:
 
-1. **Validates Input**: Checks for required fields and valid options
-2. **Creates Environment Directory**: `terraform/environments/<env-name>/`
-3. **Generates Configuration**: Creates `main.tf` and `backend.tf` from templates
-4. **Adds GitHub Secret**: Stores the account token as `HETZNER_TOKEN_<ENV_NAME>`
-5. **Initializes Terraform**: Runs `terraform init` in the environment directory
+1. **Guides Project Creation**: Displays instructions for creating a dedicated Hetzner project
+2. **Validates Input**: Checks for required fields and valid options
+3. **Creates Environment Directory**: `terraform/environments/<env-name>/`
+4. **Generates Configuration**: Creates `main.tf` and `backend.tf` from templates
+5. **Adds GitHub Secret**: Stores the project token as `HETZNER_TOKEN_<ENV_NAME>`
+6. **Initializes Terraform**: Runs `terraform init` in the environment directory
 
 ## Post-Setup Steps
 
@@ -105,9 +115,10 @@ cat main.tf
 
 ### First Deployment
 
-Deploy the server:
+Set the API token and deploy:
 
 ```bash
+export HCLOUD_TOKEN='<your-project-token>'
 terraform plan
 terraform apply
 ```
@@ -115,6 +126,7 @@ terraform apply
 ### Access Your Server
 
 After deployment:
+
 1. Get the server IP: `terraform output ips`
 2. Connect to Minecraft using the IP and port:
    - Java Edition: `<ip>:25565`
@@ -156,16 +168,20 @@ Run `./scripts/setup_env.sh` again with a different environment name.
 ### Common Issues
 
 **"gh secret set failed"**
+
 - Ensure GitHub CLI is installed: `brew install gh`
 - Authenticate: `gh auth login`
 - Check repository access permissions
 
 **"Invalid server type"**
-- Verify the server type exists in Hetzner
+
+- Use `hcloud server-type list` to see available types
+- Valid types include: `cx23`, `cx33`, `cx43`, `cax11`
 - Check current pricing at https://www.hetzner.com/cloud
 
 **"Token invalid"**
-- Ensure you're using an **account-level** API token with project creation permissions
+
+- Ensure you're using a **project-specific** API token with Read & Write permissions
 - Regenerate the token in Hetzner Console if needed
 - Update the GitHub secret manually or re-run setup
 
@@ -177,22 +193,25 @@ Run `./scripts/setup_env.sh` again with a different environment name.
 
 ## Best Practices
 
-- **Start Small**: Use cx11 for initial testing
+- **Start Small**: Use `cx23` for initial testing (~€3.56/month)
 - **Monitor Usage**: Check Hetzner Console for resource usage
 - **Backup Important Worlds**: Implement regular backups
-- **Use Different Projects**: Keep environments isolated
+- **Use Different Projects**: Keep environments isolated in separate Hetzner projects
 - **Version Control**: Commit environment configurations
+- **Add SSH Keys**: Always configure SSH access for debugging
 
-## Project Creation Details
+## Project Isolation
 
-The setup automatically creates a new Hetzner project for each environment using the account-level API token. This ensures complete isolation between environments.
+Each environment should have its own dedicated Hetzner project. This ensures:
 
-**What gets created:**
-- New Hetzner project with the specified name
-- Server deployed in the new project
-- All resources are scoped to the project
+- **Complete isolation** between environments (dev, staging, prod)
+- **Separate billing** per project
+- **Independent API tokens** for security
+- **Clean resource management**
 
 **Token Security:**
-- Account-level tokens have broad permissions - use carefully
+
+- Use project-specific tokens (not account-level)
+- Each token only has access to its own project
 - Consider rotating tokens regularly
-- The token is stored securely as a GitHub secret
+- Tokens are stored securely as GitHub secrets
