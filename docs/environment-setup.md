@@ -61,6 +61,7 @@ The script will interactively ask you to configure each server:
 - **Docker Image**: Container image (defaults based on edition)
 - **Server Type**: Hetzner instance type from the menu
 - **Location**: Datacenter location
+- **Domain** (optional): Subdomain for DNS record (e.g., `mc` for `mc.example.com`)
 
 After configuring each server, you'll be asked if you want to add another server.
 
@@ -84,6 +85,14 @@ Locations:
 - Enter the names of SSH keys you've uploaded to your Hetzner project
 - These must match the key names in Hetzner Cloud Console → Security → SSH Keys
 - Leave empty to skip (you won't be able to SSH into the server)
+
+#### STEP 2b: DNS Zone (Optional)
+
+If you want to use custom domains for your servers:
+
+- Enter your DNS zone (e.g., `example.com`)
+- The zone must already exist in [Hetzner DNS Console](https://dns.hetzner.com)
+- Leave empty to skip DNS configuration
 
 #### STEP 3: Hetzner Cloud API Token
 
@@ -209,9 +218,56 @@ Each environment should have its own dedicated Hetzner project. This ensures:
 - **Independent API tokens** for security
 - **Clean resource management**
 
-**Token Security:**
+### Token Security
 
 - Use project-specific tokens (not account-level)
 - Each token only has access to its own project
 - Consider rotating tokens regularly
 - Tokens are stored securely as GitHub secrets
+
+## Custom Domains (DNS)
+
+You can configure custom domains for your Minecraft servers using Hetzner DNS.
+
+### Prerequisites
+
+1. **Own a domain** (e.g., `example.com`)
+2. **Create a DNS zone** in [Hetzner DNS Console](https://dns.hetzner.com)
+3. **Point your domain's nameservers** to Hetzner:
+   - `hydrogen.ns.hetzner.com`
+   - `oxygen.ns.hetzner.com`
+   - `helium.ns.hetzner.de`
+
+### Configuration
+
+During environment setup:
+
+1. Enter a **subdomain** for each server (e.g., `mc` for `mc.example.com`)
+2. Enter your **DNS zone** (e.g., `example.com`)
+
+Terraform will automatically create A records pointing to your server IPs.
+
+### Example
+
+```hcl
+servers = [
+  {
+    name         = "survival"
+    edition      = "java"
+    docker_image = "itzg/minecraft-server:latest"
+    server_type  = "cx23"
+    location     = "nbg1"
+    domain       = "survival"  # Creates survival.example.com
+  }
+]
+```
+
+With `dns_zone = "example.com"`, players can connect using `survival.example.com` instead of the IP address.
+
+### Outputs
+
+After deployment, view your domains:
+
+```bash
+terraform output domains
+```

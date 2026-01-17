@@ -8,6 +8,9 @@ Infrastructure as Code (IaC) project for automated setup, deployment, and mainte
 - **Multi-Edition Support**: Java and Bedrock editions with custom Docker images
 - **Flexible Scaling**: Mix server types and locations within the same environment
 - **Environment Isolation**: Each environment deploys to a separate Hetzner project
+- **Custom Domains**: Optional DNS configuration via Hetzner DNS
+- **Firewall Protection**: Automatic firewall rules for Minecraft ports only
+- **Auto-Updates**: Daily cron job to pull latest Docker images
 - **CI/CD Integration**: GitHub Actions for automatic deployments on code changes
 - **Docker-Based**: Uses official Minecraft Docker images from itzg
 
