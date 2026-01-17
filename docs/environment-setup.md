@@ -66,13 +66,14 @@ The script will interactively ask you to configure each server:
 After configuring each server, you'll be asked if you want to add another server.
 
 Available server types:
-| Type | vCPU | RAM | Architecture | Monthly Cost |
-|------|------|-----|--------------|-------------|
-| **cx23** | 2 | 4 GB | x86 | ~€3.56 |
-| **cx33** | 4 | 8 GB | x86 | ~€7.11 |
-| **cx43** | 8 | 16 GB | x86 | ~€14.22 |
-| **cax11** | 2 | 4 GB | ARM | ~€3.92 |
-| **Custom** | - | - | - | - |
+
+| Type       | vCPU | RAM   | Architecture | Monthly Cost |
+| ---------- | ---- | ----- | ------------ | ------------ |
+| **cx23**   | 2    | 4 GB  | x86          | ~€3.56       |
+| **cx33**   | 4    | 8 GB  | x86          | ~€7.11       |
+| **cx43**   | 8    | 16 GB | x86          | ~€14.22      |
+| **cax11**  | 2    | 4 GB  | ARM          | ~€3.92       |
+| **Custom** | -    | -     | -            | -            |
 
 Locations:
 

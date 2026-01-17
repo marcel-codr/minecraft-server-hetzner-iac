@@ -1,0 +1,205 @@
+name: Setup Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment_name:
+        description: "Environment name (e.g., dev, staging, prod)"
+        required: true
+        type: string
+      server_name:
+        description: "Server name"
+        required: true
+        default: "minecraft"
+        type: string
+      edition:
+        description: "Minecraft edition"
+        required: true
+        default: "java"
+        type: choice
+        options:
+          - java
+          - bedrock
+      server_type:
+        description: "Hetzner server type"
+        required: true
+        default: "cx23"
+        type: choice
+        options:
+          - cx23
+          - cx33
+          - cx43
+          - cax11
+      location:
+        description: "Hetzner datacenter location"
+        required: true
+        default: "nbg1"
+        type: choice
+        options:
+          - nbg1
+          - fsn1
+          - hel1
+      domain:
+        description: 'Domain subdomain (optional, e.g., "mc" for mc.example.com)'
+        required: false
+        default: ""
+        type: string
+      dns_zone:
+        description: "DNS zone (optional, e.g., example.com)"
+        required: false
+        default: ""
+        type: string
+      ssh_keys:
+        description: "SSH key names (comma-separated, optional)"
+        required: false
+        default: ""
+        type: string
+      hetzner_token:
+        description: "Hetzner Cloud API token for this environment"
+        required: true
+        type: string
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
+      - name: Validate inputs
+        run: |
+          if [[ -z "${{ inputs.environment_name }}" ]]; then
+            echo "Error: Environment name is required"
+            exit 1
+          fi
+          if [[ -z "${{ inputs.hetzner_token }}" ]]; then
+            echo "Error: Hetzner token is required"
+            exit 1
+          fi
+
+      - name: Create environment directory
+        run: |
+          ENV_DIR="terraform/environments/${{ inputs.environment_name }}"
+          mkdir -p "$ENV_DIR"
+
+      - name: Generate backend.tf
+        run: |
+          ENV_DIR="terraform/environments/${{ inputs.environment_name }}"
+          cat > "$ENV_DIR/backend.tf" << 'EOF'
+          terraform {
+            backend "local" {
+              path = "terraform.tfstate"
+            }
+          }
+          EOF
+
+      - name: Format SSH keys
+        id: ssh-keys
+        run: |
+          SSH_INPUT="${{ inputs.ssh_keys }}"
+          if [ -z "$SSH_INPUT" ]; then
+            echo "ssh_keys=[]" >> $GITHUB_OUTPUT
+          else
+            SSH_KEYS=$(echo "$SSH_INPUT" | sed 's/,/", "/g' | sed 's/^/["/' | sed 's/$/"]/')
+            echo "ssh_keys=$SSH_KEYS" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set Docker image
+        id: docker-image
+        run: |
+          if [ "${{ inputs.edition }}" = "java" ]; then
+            echo "image=itzg/minecraft-server:latest" >> $GITHUB_OUTPUT
+          else
+            echo "image=itzg/minecraft-bedrock-server:latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build servers config
+        id: servers-config
+        run: |
+          DOMAIN_INPUT="${{ inputs.domain }}"
+          DOMAIN_VALUE=""
+          if [ -n "$DOMAIN_INPUT" ]; then
+            DOMAIN_VALUE="domain       = \"$DOMAIN_INPUT\""
+          else
+            DOMAIN_VALUE="domain       = \"\""
+          fi
+          cat <<EOF > /tmp/servers_config.hcl
+          [
+            {
+              name         = "${{ inputs.server_name }}"
+              edition      = "${{ inputs.edition }}"
+              docker_image = "${{ steps.docker-image.outputs.image }}"
+              server_type  = "${{ inputs.server_type }}"
+              location     = "${{ inputs.location }}"
+              ${DOMAIN_VALUE}
+            }
+          ]
+          EOF
+          echo "servers_config<<EOF" >> $GITHUB_OUTPUT
+          cat /tmp/servers_config.hcl >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Generate backend.tf
+        run: |
+          ENV_DIR="terraform/environments/${{ inputs.environment_name }}"
+          cp terraform/templates/backend.tf.template "$ENV_DIR/backend.tf"
+
+      - name: Render main.tf from template
+        env:
+          ENV_NAME: "${{ inputs.environment_name }}"
+          SERVERS_CONFIG: "${{ steps.servers-config.outputs.servers_config }}"
+          SSH_KEYS: "${{ steps.ssh-keys.outputs.ssh_keys }}"
+          DNS_ZONE: "${{ inputs.dns_zone }}"
+        run: |
+          ENV_DIR="terraform/environments/${{ inputs.environment_name }}"
+          TEMPLATE=$(mktemp)
+          perl -pe 's/\{\{([A-Z_]+)\}\}/\${$1}/g' terraform/templates/main.tf.template > "$TEMPLATE"
+          envsubst < "$TEMPLATE" > "$ENV_DIR/main.tf"
+          rm "$TEMPLATE"
+
+      - name: Initialize Terraform
+        run: |
+          ENV_DIR="terraform/environments/${{ inputs.environment_name }}"
+          export HCLOUD_TOKEN="${{ inputs.hetzner_token }}"
+          terraform -chdir="$ENV_DIR" init
+
+      - name: Validate Terraform
+        run: |
+          ENV_DIR="terraform/environments/${{ inputs.environment_name }}"
+          export HCLOUD_TOKEN="${{ inputs.hetzner_token }}"
+          terraform -chdir="$ENV_DIR" validate
+
+      - name: Store Hetzner token as secret
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SECRET_NAME="HETZNER_TOKEN_$(echo '${{ inputs.environment_name }}' | tr '[:lower:]' '[:upper:]')"
+          echo "Creating secret: $SECRET_NAME"
+          echo "${{ inputs.hetzner_token }}" | gh secret set "$SECRET_NAME"
+
+      - name: Deploy environment
+        run: |
+          ENV_DIR="terraform/environments/${{ inputs.environment_name }}"
+          export HCLOUD_TOKEN="${{ inputs.hetzner_token }}"
+          terraform -chdir="$ENV_DIR" apply -auto-approve
+
+      - name: Get server IPs
+        id: outputs
+        run: |
+          ENV_DIR="terraform/environments/${{ inputs.environment_name }}"
+          export HCLOUD_TOKEN="${{ inputs.hetzner_token }}"
+          echo "## Deployment Complete! 🎮" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Server IPs" >> $GITHUB_STEP_SUMMARY
+          terraform -chdir="$ENV_DIR" output -json ips | jq -r 'to_entries[] | "- **\(.key)**: `\(.value)`"' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Connect to Minecraft" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.edition }}" = "java" ]; then
+            echo "Add server in Minecraft Java Edition using the IP above (port 25565)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Add server in Minecraft Bedrock Edition using the IP above (port 19132)" >> $GITHUB_STEP_SUMMARY
+          fi

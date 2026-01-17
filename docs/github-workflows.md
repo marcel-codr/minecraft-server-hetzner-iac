@@ -2,6 +2,65 @@
 
 This document describes the GitHub Actions workflows used for CI/CD in this project.
 
+## Setup Environment Workflow
+
+**File:** `.github/workflows/setup-environment.yml`
+
+### Overview
+
+Create and deploy a new Minecraft server environment directly from GitHub without using the command line.
+
+### Trigger
+
+Manual dispatch only - triggered from the GitHub Actions tab with input parameters.
+
+### Inputs
+
+| Input              | Required | Default   | Description                                 |
+| ------------------ | -------- | --------- | ------------------------------------------- |
+| `environment_name` | Yes      | -         | Environment name (e.g., dev, staging, prod) |
+| `server_name`      | Yes      | minecraft | Server name identifier                      |
+| `edition`          | Yes      | java      | Minecraft edition (java/bedrock)            |
+| `server_type`      | Yes      | cx23      | Hetzner server type                         |
+| `location`         | Yes      | nbg1      | Hetzner datacenter                          |
+| `domain`           | No       | -         | Domain subdomain (e.g., "mc")               |
+| `dns_zone`         | No       | -         | DNS zone (e.g., example.com)                |
+| `ssh_keys`         | No       | -         | SSH key names (comma-separated)             |
+| `hetzner_token`    | Yes      | -         | Hetzner Cloud API token                     |
+
+### How to Use
+
+1. Go to your repository on GitHub
+2. Click **Actions** tab
+3. Select **Setup Environment** workflow
+4. Click **Run workflow**
+5. Fill in the required inputs:
+   - Environment name
+   - Server configuration
+   - Hetzner API token (from your Hetzner project)
+6. Click **Run workflow**
+
+### What It Does
+
+1. Creates the environment directory
+2. Generates `main.tf` and `backend.tf`
+3. Initializes Terraform
+4. Stores the Hetzner token as a GitHub secret
+5. Commits the environment files
+6. Deploys the server
+7. Outputs the server IP in the workflow summary
+
+### Prerequisites
+
+Before running this workflow:
+
+1. Create a Hetzner Cloud project
+2. Generate an API token for that project
+3. (Optional) Add SSH keys to the project
+4. (Optional) Create a DNS zone in Hetzner DNS
+
+---
+
 ## Deployment Workflow
 
 **File:** `.github/workflows/deployment.yml`

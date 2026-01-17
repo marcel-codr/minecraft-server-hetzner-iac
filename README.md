@@ -11,6 +11,7 @@ Infrastructure as Code (IaC) project for automated setup, deployment, and mainte
 - **Custom Domains**: Optional DNS configuration via Hetzner DNS
 - **Firewall Protection**: Automatic firewall rules for Minecraft ports only
 - **Auto-Updates**: Daily cron job to pull latest Docker images
+- **GitHub Setup Workflow**: Create and deploy environments from GitHub
 - **CI/CD Integration**: GitHub Actions for automatic deployments on code changes
 - **Docker-Based**: Uses official Minecraft Docker images from itzg
 
@@ -55,7 +56,7 @@ Your Minecraft server will be running on a Hetzner VPS with the specified config
 
 Environments represent separate deployments (e.g., dev, staging, prod) and are isolated in different Hetzner projects.
 
-Run `./scripts/setup_env.sh` and follow the guided workflow:
+Run `./scripts/setup_env.sh` or the **GitHub Setup Environment** workflow and follow the guided workflow:
 
 1. **Create a Hetzner Project** (manually in Hetzner Console)
 2. **Configure servers** interactively (edition, docker image, server type, location)
