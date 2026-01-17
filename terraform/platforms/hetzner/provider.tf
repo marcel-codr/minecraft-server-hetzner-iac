@@ -1,8 +1,8 @@
-provider "hcloud" {
-  token = env("HETZNER_TOKEN")
+terraform {
+  required_providers {
+    hcloud = {
+      source = "hetznercloud/hcloud"
+    }
+  }
 }
 
-provider "hcloud" {
-  alias  = "account"
-  token  = var.account_token != "" ? var.account_token : env("HETZNER_TOKEN")
-}

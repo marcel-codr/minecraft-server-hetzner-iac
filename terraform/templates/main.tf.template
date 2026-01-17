@@ -1,8 +1,14 @@
+terraform {
+  required_providers {
+    hcloud = {
+      source = "hetznercloud/hcloud"
+    }
+  }
+}
+
 module "hetzner" {
   source       = "../../platforms/hetzner"
   name_prefix  = "{{ENV_NAME}}-mc"
-  project_name = "{{PROJECT_NAME}}"
-  account_token = "{{ACCOUNT_TOKEN}}"
   ssh_keys     = {{SSH_KEYS}}
   
   servers = {{SERVERS_CONFIG}}

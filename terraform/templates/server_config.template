@@ -7,14 +7,14 @@ servers = [
     name         = "my-java-server"
     edition      = "java"  # or "bedrock"
     docker_image = "itzg/minecraft-server:latest"
-    server_type  = "cx11"  # Hetzner server type (cx11, cx21, etc.)
+    server_type  = "cx23"  # Hetzner server type (cx23, cx33, cx43, cax11, etc.)
     location     = "nbg1"  # Hetzner datacenter (nbg1, fsn1, hel1, etc.)
   },
   {
     name         = "my-bedrock-server"
     edition      = "bedrock"
     docker_image = "itzg/minecraft-bedrock-server:latest"
-    server_type  = "cx21"
-    location     = "fsn1"
+    server_type  = "cx33"
+    location     = "nbg1"
   }
 ]

@@ -7,6 +7,23 @@ ENVIRONMENTS_DIR="terraform/environments"
 
 echo "Minecraft Server Terraform Environment Setup"
 echo "=============================================="
+echo ""
+
+# Step 1: Guide user to create a Hetzner project
+echo "STEP 1: Create a Hetzner Cloud Project"
+echo "---------------------------------------"
+echo "Each environment should have its own Hetzner Cloud project for isolation."
+echo ""
+echo "Please create a new project in Hetzner Cloud Console:"
+echo "  1. Go to https://console.hetzner.cloud/projects"
+echo "  2. Click '+ New Project'"
+echo "  3. Name it something like 'minecraft-<env-name>' (e.g., minecraft-dev, minecraft-prod)"
+echo "  4. After creation, go to the project -> Security -> API Tokens"
+echo "  5. Generate a new API token with Read & Write permissions"
+echo "  6. Copy the token (you'll need it in a moment)"
+echo ""
+read -p "Press Enter when you have created the project and copied the API token..."
+echo ""
 
 # Ask for environment name
 read -p "Enter environment name (e.g., dev, staging, prod): " ENV_NAME
@@ -58,20 +75,20 @@ while true; do
 
   # Server type
   echo "  Available server types:"
-  echo "  1) cx11 (1 vCPU, 2GB RAM)"
-  echo "  2) cpx11 (2 vCPU, 2GB RAM)"
-  echo "  3) cx21 (2 vCPU, 4GB RAM)"
-  echo "  4) cpx21 (3 vCPU, 4GB RAM)"
+  echo "  1) cx23 (2 vCPU, 4GB RAM, x86)"
+  echo "  2) cx33 (4 vCPU, 8GB RAM, x86)"
+  echo "  3) cx43 (8 vCPU, 16GB RAM, x86)"
+  echo "  4) cax11 (2 vCPU, 4GB RAM, ARM)"
   echo "  5) Custom"
   read -p "  Choose server type [1]: " SERVER_CHOICE
   SERVER_CHOICE=${SERVER_CHOICE:-1}
   case $SERVER_CHOICE in
-    1) SERVER_TYPE="cx11" ;;
-    2) SERVER_TYPE="cpx11" ;;
-    3) SERVER_TYPE="cx21" ;;
-    4) SERVER_TYPE="cpx21" ;;
+    1) SERVER_TYPE="cx23" ;;
+    2) SERVER_TYPE="cx33" ;;
+    3) SERVER_TYPE="cx43" ;;
+    4) SERVER_TYPE="cax11" ;;
     5) read -p "  Enter custom server type: " SERVER_TYPE ;;
-    *) echo "Invalid choice, using cx11"; SERVER_TYPE="cx11" ;;
+    *) echo "Invalid choice, using cx23"; SERVER_TYPE="cx23" ;;
   esac
 
   # Location
@@ -88,14 +105,12 @@ while true; do
   }"
 
   # Ask if user wants to add another server
-  if [ $i -gt 1 ]; then
-    read -p "Do you want to add another server? (y/N): " ADD_ANOTHER
-    if [[ ! "$ADD_ANOTHER" =~ ^[Yy]$ ]]; then
-      break
-    fi
-    SERVERS_CONFIG="${SERVERS_CONFIG},
-"
+  read -p "Do you want to add another server? (y/N): " ADD_ANOTHER
+  if [[ ! "$ADD_ANOTHER" =~ ^[Yy]$ ]]; then
+    break
   fi
+  SERVERS_CONFIG="${SERVERS_CONFIG},
+"
 
   i=$((i + 1))
 done
@@ -103,7 +118,14 @@ SERVERS_CONFIG="${SERVERS_CONFIG}
 ]"
 
 # Ask for SSH keys (optional)
-read -p "Enter SSH key names (comma-separated, optional): " SSH_KEYS_INPUT
+echo ""
+echo "STEP 2: SSH Keys (Optional)"
+echo "----------------------------"
+echo "Enter the names of SSH keys you've uploaded to your Hetzner project."
+echo "These must match the key names in Hetzner Cloud Console -> Security -> SSH Keys."
+echo "Leave empty to skip (you won't be able to SSH into the server)."
+echo ""
+read -p "SSH key names (comma-separated, optional): " SSH_KEYS_INPUT
 SSH_KEYS="[]"
 if [ -n "$SSH_KEYS_INPUT" ]; then
   # Format as list
@@ -111,18 +133,15 @@ if [ -n "$SSH_KEYS_INPUT" ]; then
 fi
 
 # Ask for Hetzner token (project-specific)
-read -p "Enter Hetzner Cloud API token for this environment/project: " HCLOUD_TOKEN
+echo ""
+echo "STEP 3: Hetzner Cloud API Token"
+echo "--------------------------------"
+echo "Enter the API token you created for this environment's Hetzner project."
+echo "This token should be specific to the project you created in Step 1."
+echo ""
+read -p "Hetzner Cloud API token: " HCLOUD_TOKEN
 if [ -z "$HCLOUD_TOKEN" ]; then
   echo "Hetzner token cannot be empty."
-  exit 1
-fi
-
-# Ask for project creation details (always required)
-read -p "Enter project name: " PROJECT_NAME
-PROJECT_NAME=${PROJECT_NAME:-"$ENV_NAME-minecraft"}
-read -p "Enter account-level API token (for project creation): " ACCOUNT_TOKEN
-if [ -z "$ACCOUNT_TOKEN" ]; then
-  echo "Account token required for project creation."
   exit 1
 fi
 
@@ -140,8 +159,8 @@ else
   echo "GitHub CLI (gh) not found. Please install it and run 'gh auth login', then manually add the secret $SECRET_NAME with value: $HCLOUD_TOKEN"
 fi
 
-# Export for terraform init
-export HETZNER_TOKEN="$HCLOUD_TOKEN"
+# Export for terraform init (provider reads HCLOUD_TOKEN env var)
+export HCLOUD_TOKEN="$HCLOUD_TOKEN"
 
 # Create environment directory
 mkdir -p "$ENV_DIR"
@@ -152,14 +171,33 @@ cp "$TEMPLATE_DIR/backend.tf.template" "$ENV_DIR/backend.tf"
 # Fill main.tf template
 MAIN_TEMPLATE=$(cat "$TEMPLATE_DIR/main.tf.template")
 MAIN_TEMPLATE=${MAIN_TEMPLATE//\{\{ENV_NAME\}\}/$ENV_NAME}
-MAIN_TEMPLATE=${MAIN_TEMPLATE//\{\{PROJECT_NAME\}\}/$PROJECT_NAME}
-MAIN_TEMPLATE=${MAIN_TEMPLATE//\{\{ACCOUNT_TOKEN\}\}/$ACCOUNT_TOKEN}
 MAIN_TEMPLATE=${MAIN_TEMPLATE//\{\{SERVERS_CONFIG\}\}/$SERVERS_CONFIG}
 MAIN_TEMPLATE=${MAIN_TEMPLATE//\{\{SSH_KEYS\}\}/$SSH_KEYS}
 
 echo "$MAIN_TEMPLATE" > "$ENV_DIR/main.tf"
 
+echo ""
 echo "Environment '$ENV_NAME' created at $ENV_DIR"
+echo ""
 echo "Initializing Terraform..."
 terraform -chdir="$ENV_DIR" init
-echo "Done. You can now run: terraform -chdir=$ENV_DIR plan"
+
+echo ""
+echo "=============================================="
+echo "Setup complete!"
+echo "=============================================="
+echo ""
+echo "Your environment is ready. To deploy:"
+echo ""
+echo "  1. Set the API token:"
+echo "     export HCLOUD_TOKEN='<your-token>'"
+echo ""
+echo "  2. Review the plan:"
+echo "     terraform -chdir=$ENV_DIR plan"
+echo ""
+echo "  3. Deploy:"
+echo "     terraform -chdir=$ENV_DIR apply"
+echo ""
+echo "  4. To destroy later:"
+echo "     terraform -chdir=$ENV_DIR destroy"
+echo ""

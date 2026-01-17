@@ -1,8 +1,3 @@
-resource "hcloud_project" "minecraft" {
-  name     = var.project_name != "" ? var.project_name : "${var.name_prefix}-project"
-  provider = hcloud.account
-}
-
 locals {
   # Create a map of server configs for easier lookup
   server_configs = { for server in var.servers : server.name => server }

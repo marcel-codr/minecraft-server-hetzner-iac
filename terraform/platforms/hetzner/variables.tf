@@ -15,17 +15,6 @@ variable "servers" {
   default = []
 }
 
-variable "project_name" {
-  description = "Name for the Hetzner project"
-  type        = string
-  default     = ""
-}
-
-variable "account_token" {
-  description = "Account-level API token for project creation"
-  type        = string
-  default     = ""
-}
 
 variable "ssh_keys" {
   description = "List of SSH key names to add to servers"
