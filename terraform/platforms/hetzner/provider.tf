@@ -3,6 +3,9 @@ terraform {
     hcloud = {
       source = "hetznercloud/hcloud"
     }
+    hetznerdns = {
+      source = "timohirt/hetznerdns"
+    }
   }
 }
 

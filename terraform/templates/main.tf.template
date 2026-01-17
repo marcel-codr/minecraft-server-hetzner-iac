@@ -3,6 +3,9 @@ terraform {
     hcloud = {
       source = "hetznercloud/hcloud"
     }
+    hetznerdns = {
+      source = "timohirt/hetznerdns"
+    }
   }
 }
 
@@ -10,6 +13,7 @@ module "hetzner" {
   source       = "../../platforms/hetzner"
   name_prefix  = "{{ENV_NAME}}-mc"
   ssh_keys     = {{SSH_KEYS}}
+  dns_zone     = "{{DNS_ZONE}}"
   
   servers = {{SERVERS_CONFIG}}
 }

@@ -2,6 +2,9 @@
 # This template shows the structure for defining Minecraft servers
 # Copy this structure and customize the values for each server
 
+# DNS zone (optional) - must be managed in Hetzner DNS
+# dns_zone = "example.com"
+
 servers = [
   {
     name         = "my-java-server"
@@ -9,6 +12,7 @@ servers = [
     docker_image = "itzg/minecraft-server:latest"
     server_type  = "cx23"  # Hetzner server type (cx23, cx33, cx43, cax11, etc.)
     location     = "nbg1"  # Hetzner datacenter (nbg1, fsn1, hel1, etc.)
+    domain       = "mc"    # Optional: creates mc.example.com A record (requires dns_zone)
   },
   {
     name         = "my-bedrock-server"
@@ -16,5 +20,6 @@ servers = [
     docker_image = "itzg/minecraft-bedrock-server:latest"
     server_type  = "cx33"
     location     = "nbg1"
+    domain       = ""      # Leave empty to skip DNS
   }
 ]

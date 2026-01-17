@@ -11,8 +11,15 @@ variable "servers" {
     docker_image = string
     server_type  = string
     location     = string
+    domain       = optional(string, "")
   }))
   default = []
+}
+
+variable "dns_zone" {
+  description = "DNS zone name (e.g., example.com) - must be managed in Hetzner DNS"
+  type        = string
+  default     = ""
 }
 
 

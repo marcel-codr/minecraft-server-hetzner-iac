@@ -95,6 +95,9 @@ while true; do
   read -p "  Location (nbg1/fsn1/hel1) [nbg1]: " SERVER_LOCATION
   SERVER_LOCATION=${SERVER_LOCATION:-nbg1}
 
+  # Domain (optional)
+  read -p "  Domain subdomain (e.g., 'mc' for mc.example.com, leave empty to skip): " SERVER_DOMAIN
+
   # Add to config
   SERVERS_CONFIG="${SERVERS_CONFIG}  {
     name         = \"$SERVER_NAME\"
@@ -102,6 +105,7 @@ while true; do
     docker_image = \"$SERVER_IMAGE\"
     server_type  = \"$SERVER_TYPE\"
     location     = \"$SERVER_LOCATION\"
+    domain       = \"$SERVER_DOMAIN\"
   }"
 
   # Ask if user wants to add another server
@@ -131,6 +135,18 @@ if [ -n "$SSH_KEYS_INPUT" ]; then
   # Format as list
   SSH_KEYS=$(echo "$SSH_KEYS_INPUT" | sed 's/,/", "/g' | sed 's/^/["/' | sed 's/$/"]/')
 fi
+
+# Ask for DNS zone (optional)
+echo ""
+echo "STEP 2b: DNS Zone (Optional)"
+echo "-----------------------------"
+echo "If you want to use custom domains, enter your DNS zone managed in Hetzner DNS."
+echo "Example: example.com"
+echo "The zone must already exist in Hetzner DNS Console."
+echo "Leave empty to skip DNS configuration."
+echo ""
+read -p "DNS zone (e.g., example.com): " DNS_ZONE
+DNS_ZONE=${DNS_ZONE:-}
 
 # Ask for Hetzner token (project-specific)
 echo ""
@@ -173,6 +189,7 @@ MAIN_TEMPLATE=$(cat "$TEMPLATE_DIR/main.tf.template")
 MAIN_TEMPLATE=${MAIN_TEMPLATE//\{\{ENV_NAME\}\}/$ENV_NAME}
 MAIN_TEMPLATE=${MAIN_TEMPLATE//\{\{SERVERS_CONFIG\}\}/$SERVERS_CONFIG}
 MAIN_TEMPLATE=${MAIN_TEMPLATE//\{\{SSH_KEYS\}\}/$SSH_KEYS}
+MAIN_TEMPLATE=${MAIN_TEMPLATE//\{\{DNS_ZONE\}\}/$DNS_ZONE}
 
 echo "$MAIN_TEMPLATE" > "$ENV_DIR/main.tf"
 
